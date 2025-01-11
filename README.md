@@ -1,3 +1,12 @@
+---
+title: BOHECO Product Assistant
+emoji: 🌿
+colorFrom: green
+colorTo: blue
+sdk: docker
+app_port: 7860
+---
+
 # BOHECO Product Assistant
 
 A chatbot interface that helps customers find and learn about BOHECO products using natural language interactions.
@@ -13,4 +22,4 @@ A chatbot interface that helps customers find and learn about BOHECO products us
 
 - Backend: FastAPI, LlamaIndex
 - Frontend: HTML, CSS, JavaScript
-- AI: OpenAI GPT-3.5
+- AI: Claude 3 Sonnet

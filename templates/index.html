@@ -3,148 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BOHECO Product Assistant</title>
-    <style>
-        :root {
-            --primary-color: #1B998B;
-            --secondary-color: #2D3047;
-            --background-color: #f7fafc;
-            --text-color: #2d3748;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6;
-            color: var(--text-color);
-            background-color: var(--background-color);
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .chat-header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding: 1rem;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .chat-container {
-            flex-grow: 1;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .chat-messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 1rem;
-        }
-
-        .message {
-            margin-bottom: 1rem;
-            padding: 1rem;
-            border-radius: 10px;
-            max-width: 80%;
-        }
-
-        .user-message {
-            background-color: var(--primary-color);
-            color: white;
-            margin-left: auto;
-        }
-
-        .bot-message {
-            background-color: #e2e8f0;
-            margin-right: auto;
-        }
-
-        .product-links {
-            margin-top: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .product-links a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-
-        .product-links a:hover {
-            text-decoration: underline;
-        }
-
-        .chat-input-container {
-            padding: 1rem;
-            background-color: white;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        .chat-input-form {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .chat-input {
-            flex-grow: 1;
-            padding: 0.75rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-
-        .send-button {
-            padding: 0.75rem 1.5rem;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .send-button:hover {
-            background-color: var(--secondary-color);
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 1rem;
-            font-style: italic;
-            color: #718096;
-        }
-
-        .logo {
-            max-width: 200px;
-            height: auto;
-            margin-bottom: 1rem;
-        }
-    </style>
+    <title>Bombay Hemp Company - India's Most Trusted CBD Brand</title>
+    
+    <!-- Favicon links -->
+    <link rel="shortcut icon" href="/static/favicon.png">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <div class="container">
         <div class="chat-header">
             <img src="/static/boheco-logo.png" alt="BOHECO Logo" class="logo">
             <h1>Meet Kaya</h1>
-            <p>Your BOHECO Virtual Assistant</p>
+            <p>Your Bombay Hemp Company Virtual Assistant</p>
         </div>
         
         <div class="chat-container">
@@ -165,88 +36,15 @@
                            id="user-input" 
                            placeholder="Type your message here..."
                            required>
+                    <button type="button" class="voice-button" id="voice-button">
+                        <i class="fas fa-microphone"></i>
+                    </button>
                     <button type="submit" class="send-button">Send</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <script>
-        const chatForm = document.getElementById('chat-form');
-        const chatMessages = document.getElementById('chat-messages');
-        const userInput = document.getElementById('user-input');
-        const loadingIndicator = document.getElementById('loading');
-
-        chatForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const message = userInput.value.trim();
-            if (!message) return;
-
-            // Add user message
-            addMessage(message, 'user');
-            userInput.value = '';
-
-            // Show loading indicator
-            loadingIndicator.style.display = 'block';
-
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ message }),
-                });
-
-                const data = await response.json();
-                
-                if (response.ok) {
-                    // Add bot response
-                    addMessage(data.response, 'bot', data.products);
-                } else {
-                    addMessage('Sorry, I encountered an error. Please try again.', 'bot');
-                }
-            } catch (error) {
-                addMessage('Sorry, I encountered an error. Please try again.', 'bot');
-            } finally {
-                loadingIndicator.style.display = 'none';
-            }
-        });
-
-        function addMessage(text, sender, products = []) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sender}-message`;
-            messageDiv.textContent = text;
-
-            if (products && products.length > 0) {
-                const linksDiv = document.createElement('div');
-                linksDiv.className = 'product-links';
-                
-                // Create a Set to store unique URLs
-                const uniqueProducts = new Map();
-                products.forEach(product => {
-                    if (!uniqueProducts.has(product.url)) {
-                        uniqueProducts.set(product.url, product);
-                    }
-                });
-                
-                // Add unique product links
-                uniqueProducts.forEach(product => {
-                    const link = document.createElement('a');
-                    link.href = product.url;
-                    link.target = '_blank';
-                    link.textContent = `View: ${product.title || 'BOHECO Product'}`;
-                    linksDiv.appendChild(link);
-                    linksDiv.appendChild(document.createElement('br'));
-                });
-                
-                messageDiv.appendChild(linksDiv);
-            }
-
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-    </script>
+    <script src="/static/js/chat.js"></script>
 </body>
 </html>

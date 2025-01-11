@@ -3,7 +3,16 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage, PromptTemplate
+from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage
+from llama_index.core.prompts import PromptTemplate
+from typing import List, Dict
+import json
+from llama_index.llms.anthropic import Anthropic
+import os
+from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
+
+load_dotenv()  # Add this near the top of your file
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -15,46 +24,88 @@ templates = Jinja2Templates(directory="templates")
 # Define request model
 class ChatMessage(BaseModel):
     message: str
+    history: List[Dict[str, str]] = []  # List of previous messages
 
 # Initialize the query engine globally
+query_engine = None
+
+def format_chat_history(history: List[Dict[str, str]]) -> str:
+    """Format chat history into a string"""
+    formatted_history = ""
+    for msg in history:
+        role = "User" if msg.get("role") == "user" else "Kaya"
+        formatted_history += f"{role}: {msg.get('content')}\n"
+    return formatted_history
+
 def init_query_engine():
     try:
         storage_context = StorageContext.from_defaults(persist_dir="backend/data/product_index")
+        if not storage_context:
+            print("Error: Storage context is empty")
+            return None
+            
         index = load_index_from_storage(storage_context)
+        if not index:
+            print("Error: Could not load index from storage")
+            return None
         
-        RESPONSE_TEMPLATE = """You are a helpful and knowledgeable sales assistant for BOHECO (Bombay Hemp Company). 
-        Your goal is to provide informative, natural responses about their products.
+        # Initialize Anthropic LLM
+        llm = Anthropic(model="claude-3-sonnet-20240229", api_key=os.getenv("ANTHROPIC_API_KEY"))
         
-        Context information from product catalog is below:
+        custom_prompt = PromptTemplate("""You are Kaya, BOHECO's (Bombay Hemp Company, India's Most Trusted CBD Brand) expert virtual assistant. 
+        Your responses should be professional yet warm and engaging.
+
+        Context information from product catalog:
         ----------------
         {context_str}
         ----------------
 
-        Using the context provided, please provide a helpful response to the user's question: {query_str}
+        Previous conversation:
+        {query_str}
 
-        Your response should:
-        1. Be conversational and empathetic
-        2. Briefly explain why the suggested product(s) would help
-        3. Include specific product features and benefits
-        4. Always include the product prices if available
-        5. End with a clear call to action
+        Current user message: {query_str}
 
-        Response:"""
+        Guidelines for your response:
+        1. Be concise but informative - keep responses to 4 sentences maximum(important!)
+        2. Always mention specific prices when available
+        3. Include key active ingredients and their benefits
+        4. Provide clear dosage instructions when relevant
+        5. Use a friendly, conversational tone
+        6. If discussing multiple products, clearly differentiate between them
+        7. End with a question or suggestion to encourage engagement
+        8. If you're unsure about any specific detail or if the question is outside your knowledge:
+           - For general inquiries: Direct users to email info@boheco.com
+           - For business/bulk queries: Direct users to email sales@boheco.com
+        9. Reference previous messages when relevant to maintain conversation continuity
 
-        custom_prompt = PromptTemplate(RESPONSE_TEMPLATE)
+        Remember:
+        - Don't make medical claims
+        - Be accurate with pricing and product details
+        - Focus on education rather than hard selling
+        - Use natural, conversational language
+        - If you cannot confidently answer a question, be honest and provide the appropriate email contact
+
+        Response:""")
         
         return index.as_query_engine(
-            response_mode="compact",
-            streaming=False,
-            similarity_top_k=3,
             text_qa_template=custom_prompt,
-            verbose=True
+            llm=llm,
+            similarity_top_k=3
         )
     except Exception as e:
         print(f"Error initializing query engine: {str(e)}")
         return None
 
+# Initialize the query engine at startup
 query_engine = init_query_engine()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def home(request: Request):
@@ -62,28 +113,51 @@ async def home(request: Request):
 
 @app.post("/chat")
 async def chat(message: ChatMessage):
-    if query_engine is None:
+    global query_engine
+    
+    if not message.message or not message.message.strip():
         raise HTTPException(
-            status_code=500, 
-            detail="Query engine not initialized properly"
+            status_code=400,
+            detail="Message cannot be empty"
         )
     
+    if query_engine is None:
+        query_engine = init_query_engine()
+        if query_engine is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Query engine initialization failed"
+            )
+    
     try:
-        response = query_engine.query(message.message)
+        # Format chat history
+        chat_history = format_chat_history(message.history)
         
-        # Debug print
-        print("Source nodes:", [node.metadata for node in response.source_nodes])
+        # Combine history with current message
+        full_query = f"{chat_history}\nUser: {message.message}"
         
+        response = query_engine.query(full_query)
+        if not response:
+            raise HTTPException(
+                status_code=500,
+                detail="No response generated"
+            )
+        
+        # Collect all product links from source nodes
         products = []
+        seen_urls = set()
+        
         for node in response.source_nodes:
-            if node.metadata.get('url'):
+            url = node.metadata.get('url')
+            if url and url not in seen_urls:
                 products.append({
-                    'url': node.metadata.get('url'),
+                    'url': url,
                     'title': node.metadata.get('title', 'BOHECO Product')
                 })
+                seen_urls.add(url)
         
         return {
-            'response': response.response.strip(),
+            'response': str(response),
             'products': products
         }
     except Exception as e:
@@ -92,3 +166,7 @@ async def chat(message: ChatMessage):
             status_code=500, 
             detail=f"Error processing chat: {str(e)}"
         )
+
+@app.get("/chat-widget")
+async def chat_widget(request: Request):
+    return templates.TemplateResponse("widget.html", {"request": request})

@@ -1,12 +1,12 @@
 from llama_index.core import VectorStoreIndex, Settings, Document
 from llama_index.readers.web import SimpleWebPageReader
-from llama_index.llms.openai import OpenAI
+from llama_index.llms.anthropic import Anthropic
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # Configure the LLM before creating the index
-Settings.llm = OpenAI(model="gpt-3.5-turbo")
+Settings.llm = Anthropic(model="claude-3-sonnet-20240229")
 
 def create_index():
     with open("product_urls.txt", 'r') as f:

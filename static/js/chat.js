@@ -1,3 +1,6 @@
+const APP_VERSION = '1.1';
+console.log('Chat app version:', APP_VERSION);
+
 let conversationHistory = [];
 
 const chatForm = document.getElementById('chat-form');
@@ -52,36 +55,44 @@ function addMessage(content, type) {
     if (type === 'user') {
         messageDiv.textContent = content;
     } else {
-        const textDiv = document.createElement('div');
-        textDiv.className = 'bot-text';
-        textDiv.textContent = content.message;
-        messageDiv.appendChild(textDiv);
+        try {
+            // Add the message text
+            const textDiv = document.createElement('div');
+            textDiv.className = 'bot-text';
+            textDiv.textContent = content.message;
+            messageDiv.appendChild(textDiv);
 
-        if (content.products && content.products.length > 0) {
-            const productsDiv = document.createElement('div');
-            productsDiv.className = 'product-buttons';
+            // Add product buttons if there are products
+            if (content.products && content.products.length > 0) {
+                const productsDiv = document.createElement('div');
+                productsDiv.className = 'product-buttons';
 
-            content.products.forEach(product => {
-                const button = document.createElement('a');
-                button.href = product.url;
-                button.target = '_blank';
-                button.className = 'product-button';
-                
-                const title = product.title
-                    .replace(/([a-z])([A-Z])/g, '$1 $2')
-                    .replace(/\s+/g, ' ')
-                    .trim();
+                content.products.forEach(product => {
+                    const productLink = document.createElement('a');
+                    productLink.href = product.url;
+                    productLink.className = 'product-button';
+                    productLink.target = '_blank';
+                    
+                    // Clean up the title
+                    const displayTitle = product.title
+                        .replace(/([a-z])([A-Z])/g, '$1 $2')
+                        .replace(/\s+/g, ' ')
+                        .trim();
 
-                button.innerHTML = `
-                    <div class="product-info">
-                        <div class="product-name">${title}</div>
-                        <div class="product-price">${product.price}</div>
-                    </div>
-                `;
-                productsDiv.appendChild(button);
-            });
+                    productLink.innerHTML = `
+                        <div class="product-info">
+                            <div class="product-name">${displayTitle}</div>
+                            <div class="product-price">${product.price}</div>
+                        </div>
+                    `;
+                    productsDiv.appendChild(productLink);
+                });
 
-            messageDiv.appendChild(productsDiv);
+                messageDiv.appendChild(productsDiv);
+            }
+        } catch (error) {
+            console.error('Error rendering message:', error);
+            messageDiv.textContent = 'Error displaying message';
         }
     }
 

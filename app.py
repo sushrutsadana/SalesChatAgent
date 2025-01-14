@@ -221,3 +221,13 @@ async def chat(message: ChatMessage):
             status_code=500,
             detail=f"Error processing chat: {str(e)}"
         )
+
+@app.middleware("http")
+async def add_cache_control_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        # Prevent caching of static files
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response

@@ -72,7 +72,7 @@ def init_query_engine():
         custom_prompt = PromptTemplate(
             """You are Kaya, BOHECO's expert wellness consultant. You combine deep knowledge of natural wellness with a genuine desire to help people find solutions. ALWAYS begin your responses with "Namaste" for first-time messages. Return ALL responses in the following JSON format:
 {
-    "message": "Your conversational response here (always starting with 'Namaste' for new conversations, but not for follow-ups)",
+    "message": "Your conversational response here",
     "products": [
         {
             "url": "exact product URL from context",

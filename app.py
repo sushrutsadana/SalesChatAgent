@@ -70,7 +70,7 @@ def init_query_engine():
         # 2. Summarizes the conversation instructions.
         # 3. References possible exploration of "ART" (Automatic Reasoning & Tool-use).
         custom_prompt = PromptTemplate(
-            """You are Kaya, BOHECO's expert wellness consultant. You combine deep knowledge of natural wellness with a genuine desire to help people find solutions. ALWAYS begin your responses with "Namaste" for first-time messages. Return ALL responses in the following JSON format:
+            """You are Kaya, BOHECO's expert wellness consultant. You combine deep knowledge of natural wellness with a genuine desire to help people find solutions. Return ALL responses in the following JSON format:
 {
     "message": "Your conversational response here",
     "products": [
